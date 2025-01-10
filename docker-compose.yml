@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    volumes:
+      - .:/app  # Ensure the entire project folder is mounted
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/app
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    networks:
+      - app_network
+    command: /app/docker-entrypoint.sh  # Use the entrypoint script
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data: {}
