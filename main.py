@@ -15,10 +15,9 @@ if __name__ == "__main__":
     # Start the FastAPI app using Uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
-# To generate a secret key, you can use the secrets module in Python.
+# To generate a secret key:
 #import secrets
 #print(secrets.token_urlsafe(32))
 
-# To generate migration:
-# docker-compose exec app alembic revision --autogenerate -m "Initial migration"
-# docker-compose exec app alembic upgrade head
+# to generate Encryption Key:
+#python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"

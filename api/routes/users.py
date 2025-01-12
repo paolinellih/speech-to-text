@@ -3,16 +3,19 @@ from sqlalchemy.orm import Session
 from domain.schemas.user import UserCreate, UserResponse
 from application.use_cases.register_user import RegisterUser
 from infrastructure.services.email_service import SMTPEmailService
+from infrastructure.services.fernet_encryption_service import FernetEncryptionService
 from infrastructure.repositories.user_repository import SQLAlchemyUserRepository
 from infrastructure.database.connection import get_db
 from domain.models.user import User
-from decouple import config  # To load .env variables
+from decouple import config
+
 
 router = APIRouter()
 
 # Initialize your services
 db_session = next(get_db())  # Create a session for the DB
 user_repository = SQLAlchemyUserRepository(db=db_session)
+encryption_service = FernetEncryptionService()
 
 # Load SMTP configuration from .env file
 smtp_host = config("SMTP_HOST")
@@ -29,7 +32,11 @@ email_service = SMTPEmailService(
 )
 
 # Pass the repository and email service into the use case
-register_user_use_case = RegisterUser(user_repository=user_repository, email_service=email_service)
+register_user_use_case = RegisterUser(
+    user_repository=user_repository, 
+    email_service=email_service, 
+    encryption_service=encryption_service
+)
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -51,3 +58,20 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to register user: {str(e)}")
     
     return registered_user
+
+@router.get("/confirm-email/{encrypted_id}")
+def confirm_email(encrypted_id: str):
+    try:
+        # Decrypt the user ID
+        user_id = encryption_service.decrypt(encrypted_id)
+
+        # Find and update the user
+        user = db_session.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        user.is_email_verified = True
+        db_session.commit()
+        return {"message": "Email confirmed successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid or expired link: {str(e)}")

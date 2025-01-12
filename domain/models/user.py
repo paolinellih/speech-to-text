@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy.ext.declarative import declarative_base
