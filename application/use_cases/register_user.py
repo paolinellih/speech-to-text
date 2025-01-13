@@ -30,14 +30,18 @@ class RegisterUser:
         # Encrypt the user ID
         encrypted_id = self.encryption_service.encrypt(str(user.id))
 
-        users_confirma_email_url = config("USERS_CONFIRM_EMAIL_URL");
+        user_url = config("USERS_URL");
 
         # Generate the confirmation link (it could be a token-based URL)
-        confirmation_link = f"{users_confirma_email_url}/confirm-email/{encrypted_id}"
-        print(f"Constructed confirmation link: {confirmation_link}")
+        confirmation_link = f"{user_url}/confirm-email/{encrypted_id}"
+
+        body = f'Please confirm your email by clicking the link: {confirmation_link}'
 
         # Send the confirmation email
-        print(f"Register: Sending email to: {email}")
-        self.email_service.send_confirmation_email(email, confirmation_link)
+        self.email_service.send_email(
+            recipient_email= email, 
+            subject_email="Confirm Your Email Address", 
+            body_email=body
+        )
         
         return user

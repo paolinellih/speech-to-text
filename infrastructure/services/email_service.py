@@ -10,14 +10,14 @@ class SMTPEmailService(EmailService):
         self.smtp_user = smtp_user
         self.smtp_password = smtp_password
 
-    def send_confirmation_email(self, recipient_email: str, confirmation_link: str):
+    def send_email(self, recipient_email: str, subject_email: str, body_email: str):
         # Compose the email message
         msg = MIMEMultipart()
         msg['From'] = self.smtp_user  # From is your Gmail address
         msg['To'] = recipient_email  # To is the recipient's address
-        msg['Subject'] = 'Confirm Your Email Address'
+        msg['Subject'] = subject_email
 
-        body = f'Please confirm your email by clicking the link: {confirmation_link}'
+        body = body_email
 
         msg.attach(MIMEText(body, 'plain'))
 

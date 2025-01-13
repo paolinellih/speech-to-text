@@ -26,3 +26,6 @@ class SQLAlchemyUserRepository(UserRepository):
         if user:
             self.db.delete(user)
             self.db.commit()
+    
+    def get_user_by_reset_token(self, token: str) -> Optional[User]:
+        return self.db.query(User).filter(User.reset_token == token).first()

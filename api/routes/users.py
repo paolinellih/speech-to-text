@@ -1,14 +1,23 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from domain.schemas.user import UserCreate, UserResponse
 from application.use_cases.register_user import RegisterUser
+from application.use_cases.reset_password import ResetPassword
+from application.use_cases.forgot_password import ForgotPassword
+from application.use_cases.reset_password import ResetPassword
+from domain.schemas.user import ForgotPasswordRequest
+from domain.schemas.user import ResetPasswordRequest
 from infrastructure.services.email_service import SMTPEmailService
 from infrastructure.services.fernet_encryption_service import FernetEncryptionService
 from infrastructure.repositories.user_repository import SQLAlchemyUserRepository
 from infrastructure.database.connection import get_db
 from domain.models.user import User
 from decouple import config
+from utils.hashing import Hasher
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
+templates = Jinja2Templates(directory="templates")
 
 router = APIRouter()
 
@@ -22,6 +31,8 @@ smtp_host = config("SMTP_HOST")
 smtp_port = config("SMTP_PORT", cast=int)  # Ensure it's cast to an integer
 smtp_user = config("SMTP_USER")
 smtp_password = config("SMTP_PASSWORD")
+
+users_url = config("USERS_URL")
 
 # Initialize the SMTPEmailService with the loaded configuration
 email_service = SMTPEmailService(
@@ -37,6 +48,10 @@ register_user_use_case = RegisterUser(
     email_service=email_service, 
     encryption_service=encryption_service
 )
+
+# Use cases for forgot and reset password
+forgot_password_use_case = ForgotPassword(user_repository, email_service, encryption_service)
+reset_password_use_case = ResetPassword(user_repository, Hasher())
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -60,7 +75,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     return registered_user
 
 @router.get("/confirm-email/{encrypted_id}")
-def confirm_email(encrypted_id: str):
+def confirm_email(request: Request, encrypted_id: str):
     try:
         # Decrypt the user ID
         user_id = encryption_service.decrypt(encrypted_id)
@@ -72,6 +87,34 @@ def confirm_email(encrypted_id: str):
 
         user.is_email_verified = True
         db_session.commit()
-        return {"message": "Email confirmed successfully."}
+        return templates.TemplateResponse("email_confirmation.html", {"request": request})
+        #return {"message": "Email confirmed successfully."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid or expired link: {str(e)}")
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+@router.post("/forgot-password")
+def forgot_password(request: Request, forgot_password_request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        reset_link_base = f"{users_url}/reset-password"
+        forgot_password_use_case.execute(email=forgot_password_request.email, reset_link_base=reset_link_base)
+        return templates.TemplateResponse("forgot_password_confirmation.html", {"request": request})
+        #return {"message": "Password reset email sent successfully."}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(request: Request, token: str):
+    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
+
+@router.post("/reset-password")
+def reset_password(request: Request, reset_password_request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        reset_password_use_case.execute(token=reset_password_request.token, new_password=reset_password_request.new_password)
+        return templates.TemplateResponse("reset_password_confirmation.html", {"request": request})
+        #return {"message": "Password reset successful."}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
