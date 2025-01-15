@@ -25,3 +25,15 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
     class Config:
         orm_mode = True
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    class Config:
+        orm_mode = True
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    class Config:
+        orm_mode = True

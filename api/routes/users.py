@@ -1,19 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
-from domain.schemas.user import UserCreate, UserResponse
 from application.use_cases.register_user import RegisterUser
 from application.use_cases.reset_password import ResetPassword
 from application.use_cases.forgot_password import ForgotPassword
 from application.use_cases.reset_password import ResetPassword
-from domain.schemas.user import ForgotPasswordRequest
-from domain.schemas.user import ResetPasswordRequest
+from application.use_cases.login_use_case import LoginUser
+from domain.schemas.user import ForgotPasswordRequest, ResetPasswordRequest, LoginRequest
+from domain.schemas.user import UserCreate, UserResponse, LoginResponse
 from infrastructure.services.email_service import SMTPEmailService
 from infrastructure.services.fernet_encryption_service import FernetEncryptionService
+from infrastructure.services.authentication_service import AuthenticationServiceImplementation
 from infrastructure.repositories.user_repository import SQLAlchemyUserRepository
 from infrastructure.database.connection import get_db
 from domain.models.user import User
 from decouple import config
 from utils.hashing import Hasher
+from api.utils.jwt_handler import create_access_token
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -25,6 +27,7 @@ router = APIRouter()
 db_session = next(get_db())  # Create a session for the DB
 user_repository = SQLAlchemyUserRepository(db=db_session)
 encryption_service = FernetEncryptionService()
+authentication_service = AuthenticationServiceImplementation(user_repository)
 
 # Load SMTP configuration from .env file
 smtp_host = config("SMTP_HOST")
@@ -49,9 +52,10 @@ register_user_use_case = RegisterUser(
     encryption_service=encryption_service
 )
 
-# Use cases for forgot and reset password
 forgot_password_use_case = ForgotPassword(user_repository, email_service, encryption_service)
 reset_password_use_case = ResetPassword(user_repository, Hasher())
+login_user_use_case = LoginUser(authentication_service)
+
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -118,3 +122,11 @@ def reset_password(request: Request, reset_password_request: ResetPasswordReques
         #return {"message": "Password reset successful."}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/login", response_model=LoginResponse)
+def login_user(login_request: LoginRequest, db: Session = Depends(get_db)):
+    try:
+        encrypted_token = login_user_use_case.execute(login_request.email, login_request.password)
+        return {"access_token": encrypted_token, "token_type": "bearer"}
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))

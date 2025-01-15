@@ -7,7 +7,7 @@ import os
 load_dotenv()
 
 # Constants
-SECRET_KEY = os.getenv("TOKEN")  # Load the secret key from .env
+SECRET_KEY = os.getenv("ENCRYPTION_KEY")  # Load the secret key from .env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

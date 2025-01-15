@@ -27,21 +27,18 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
-# def test_register_user_success():
-#     # Define the test payload
-#     test_payload = {
-#         "username": "testuser",
-#         "email": "testuser@example.com",
-#         "password": "testpassword",
-#     }
+def test_register_user_success():
+    # Define the test payload
+    test_payload = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword",
+    }
 
-#     # Call the endpoint
-#     response = client.post("/users/register", json=test_payload)
+    # Call the endpoint
+    response = client.post("/users/register", json=test_payload)
 
-#     # Output the response for debugging
-#     print(response.json())
-
-#     # Assertions
-#     assert response.status_code == 200
-#     assert response.json()["username"] == "testuser"
-#     assert response.json()["email"] == "testuser@example.com"
+    # Assertions
+    assert response.status_code == 200
+    assert response.json()["username"] == "testuser"
+    assert response.json()["email"] == "testuser@example.com"
