@@ -15,7 +15,7 @@ async def transcribe_audio(file: UploadFile):
         audio = AudioSegment.from_file(temp_file)
     except Exception as e:
         os.remove(temp_file)
-        return f"Error processing audio file: {str(e)}"
+        return f"Error processing audio file"
 
     # Convert the file to WAV if it's not already in a supported format
     try:
@@ -23,7 +23,7 @@ async def transcribe_audio(file: UploadFile):
         audio.export(temp_wav, format="wav")
     except Exception as e:
         os.remove(temp_file)
-        return f"Error converting audio file: {str(e)}"
+        return f"Error converting audio file"
 
     # Transcribe the audio
     recognizer = sr.Recognizer()
@@ -34,7 +34,7 @@ async def transcribe_audio(file: UploadFile):
     except Exception as e:
         os.remove(temp_file)
         os.remove(temp_wav)
-        return f"Error transcribing audio file: {str(e)}"
+        return f"Error transcribing audio file"
 
     # Clean up temporary files after transcription
     os.remove(temp_file)

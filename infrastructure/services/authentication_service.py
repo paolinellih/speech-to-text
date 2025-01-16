@@ -10,7 +10,7 @@ class AuthenticationServiceImplementation(AuthenticationService):
     def authenticate(self, email: str, password: str) -> str:
         # Fetch user by email
         user = self.user_repository.get_user_by_email(email)
-        if not user or not Hasher.verify_password(password, user.hashed_password):
+        if not user or not user.is_email_verified or not Hasher.verify_password(password, user.hashed_password):
             raise ValueError("Invalid email or password.")
 
         # Generate and return JWT token with user email in the 'sub' claim
