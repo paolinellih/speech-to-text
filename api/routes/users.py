@@ -59,15 +59,17 @@ login_user_use_case = LoginUser(authentication_service)
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if the email is already registered
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered.")
+    # # Check if the email is already registered
+    # existing_user = db.query(User).filter(User.email == user.email).first()
+    # if existing_user:
+    #     return existing_user
+    #     #raise HTTPException(status_code=400, detail="Email already registered.")
     
-    # Check if the username is already registered
-    existing_username = db.query(User).filter(User.username == user.username).first()
-    if existing_username:
-        raise HTTPException(status_code=400, detail="Username already exists.")
+    # # Check if the username is already registered
+    # existing_username = db.query(User).filter(User.username == user.username).first()
+    # if existing_username:
+    #     return existing_user
+    #     #raise HTTPException(status_code=400, detail="Username already exists.")
     
     try:
         # Call the use case to register the user and send the confirmation email

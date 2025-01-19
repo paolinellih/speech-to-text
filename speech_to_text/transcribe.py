@@ -3,10 +3,13 @@ from fastapi import UploadFile
 import os
 from pydub import AudioSegment
 import tempfile
+import time
 
 async def transcribe_audio(file: UploadFile):
+    # Create a unique name
+    unique_filename = f"{int(time.time() * 1000)}"
     # Save uploaded file temporarily
-    temp_file = f"temp_{file.filename}"
+    temp_file = f"temp_{unique_filename}"
     with open(temp_file, "wb") as f:
         f.write(await file.read())
 
